@@ -4,8 +4,9 @@ import {
   ProductContainer,
   ProductDetails,
 } from "@/src/styles/pages/product";
-import { GetStaticProps } from "next";
+import { GetStaticPaths, GetStaticProps } from "next";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import Stripe from "stripe";
 
 interface ProductProps {
@@ -18,13 +19,19 @@ interface ProductProps {
     description: string;
   };
 }
+
 export default function Product({ product }: ProductProps) {
+  const { isFallback } = useRouter();
+
+  if (isFallback) {
+    return "Loading...";
+  }
   return (
     <ProductContainer>
       <ImageContainer>
         <Image
           src={product.imageUrl}
-          blurDataURL={product.imageUrl}
+          // blurDataURL={product.imageUrl}
           height={480}
           width={520}
           alt=""
@@ -43,6 +50,17 @@ export default function Product({ product }: ProductProps) {
   );
 }
 
+export const getStaticPaths: GetStaticPaths = async () => {
+  return {
+    paths: [
+      {
+        params: { id: "prod_MLH5Wy0Y97hDAC" },
+      },
+    ],
+    fallback: "blocking",
+  };
+};
+
 export const getStaticProps: GetStaticProps<any, { id: string }> = async ({
   params,
 }) => {
@@ -51,21 +69,20 @@ export const getStaticProps: GetStaticProps<any, { id: string }> = async ({
   const product = await stripe.products.retrieve(productId, {
     expand: ["default_price"],
   });
-
   const price = product.default_price as Stripe.Price;
-
   return {
     props: {
-      id: product.id,
-      name: product.name,
-      imageUrl: product.images[0],
-      url: product.url,
-      price: new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      }).format((price.unit_amount || 0) / 100),
-      description: product.description,
+      product: {
+        id: product.id,
+        name: product.name,
+        imageUrl: product.images[0],
+        price: new Intl.NumberFormat("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        }).format((price.unit_amount || 0) / 100),
+        description: product.description,
+      },
     },
-    revalidate: 60 * 60 * 1, // 1 hour
+    revalidate: 60 * 60 * 1, // 1 hours
   };
 };
