@@ -1,30 +1,71 @@
+import { stripe } from "@/src/lib/stripe";
 import {
   ImageContainer,
   ProductContainer,
   ProductDetails,
 } from "@/src/styles/pages/product";
-import { useRouter } from "next/router";
-export default function Product() {
-  const { query } = useRouter();
+import { GetStaticProps } from "next";
+import Image from "next/image";
+import Stripe from "stripe";
+
+interface ProductProps {
+  product: {
+    id: string;
+    name: string;
+    imageUrl: string;
+    url: string;
+    price: string;
+    description: string;
+  };
+}
+export default function Product({ product }: ProductProps) {
   return (
-    <>
-      <ProductContainer>
-        <ImageContainer></ImageContainer>
+    <ProductContainer>
+      <ImageContainer>
+        <Image
+          src={product.imageUrl}
+          blurDataURL={product.imageUrl}
+          height={480}
+          width={520}
+          alt=""
+        />
+      </ImageContainer>
 
-        <ProductDetails>
-          <h1>Camiseta X</h1>
-          <span>R$ 79,90</span>
+      <ProductDetails>
+        <h1>{product.name}</h1>
+        <span>{product.price}</span>
 
-          <p>
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Sequi fuga
-            inventore maiores voluptatum similique? Laborum ratione harum
-            aspernatur recusandae hic? Error porro maiores esse inventore odio
-            sapiente expedita, corrupti quibusdam!
-          </p>
+        <p>{product.description}</p>
 
-          <button>Comprar agora</button>
-        </ProductDetails>
-      </ProductContainer>
-    </>
+        <button>Comprar agora</button>
+      </ProductDetails>
+    </ProductContainer>
   );
 }
+
+export const getStaticProps: GetStaticProps<any, { id: string }> = async ({
+  params,
+}) => {
+  const productId = params!.id;
+
+  const product = await stripe.products.retrieve(productId, {
+    expand: ["default_price"],
+  });
+
+  const price = product.default_price as Stripe.Price;
+
+  return {
+    props: {
+      id: product.id,
+      name: product.name,
+      imageUrl: product.images[0],
+      url: product.url,
+      price: new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format((price.unit_amount || 0) / 100),
+      description: product.description,
+    },
+    revalidate: 60 * 60 * 1, // 1 hour
+  };
+};

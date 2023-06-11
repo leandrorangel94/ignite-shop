@@ -14,7 +14,7 @@ interface HomeProps {
     name: string;
     imageUrl: string;
     url: string;
-    price: number;
+    price: string;
   }[];
 }
 
@@ -76,6 +76,6 @@ export const getStaticProps: GetStaticProps = async () => {
     props: {
       products,
     },
-    revalidate: 60 * 60 * 2,
+    revalidate: 60 * 60 * 2, // 2 hours
   };
 };
