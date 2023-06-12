@@ -26,6 +26,7 @@ export default function Product({ product }: ProductProps) {
   if (isFallback) {
     return "Loading...";
   }
+
   return (
     <ProductContainer>
       <ImageContainer>
@@ -57,7 +58,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
         params: { id: "prod_MLH5Wy0Y97hDAC" },
       },
     ],
-    fallback: "blocking",
+    fallback: true,
   };
 };
 
